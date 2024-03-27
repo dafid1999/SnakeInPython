@@ -7,14 +7,14 @@ from tkinter import *
 import random
 import time
 import numpy as np
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
 
 # Define useful parameters
 size_of_board = 1000
 rows = 20
 cols = 20
 DELAY = 100
-snake_initial_length = 5
+snake_initial_length = 3
 symbol_size = (size_of_board / 3 - size_of_board / 8) / 2
 symbol_thickness = 2
 RED_COLOR = "#EE4035"
@@ -77,6 +77,8 @@ class SnakeAndApple:
         self.enemy = []
         self.enemy_objects = []
         self.enemy_cell = []
+        self.enemy_speed = 1
+        self.enemy_level = 1
 
     def play_again(self):
         self.canvas.delete("all")
@@ -85,7 +87,7 @@ class SnakeAndApple:
         self.place_apple()
         self.initialize_enemy()
         self.display_snake(mode="complete")
-        self.display_enemy()
+        self.display_enemy(mode="start")
         self.begin_time = time.time()
 
     def mainloop(self):
@@ -94,6 +96,7 @@ class SnakeAndApple:
             if self.begin:
                 if not self.crashed:
                     self.window.after(DELAY, self.update_snake(self.last_key))
+                    self.window.after(DELAY, self.update_enemy())
                 else:
                     self.begin = False
                     self.display_gameover()
@@ -208,17 +211,24 @@ class SnakeAndApple:
                 self.crashed = TRUE
             self.window.update()
 
-    def display_enemy(self):
-        unoccupied_cells = set(self.board) - set(self.snake) - set(self.apple_cell)
-        self.enemy_cell = random.choice(list(unoccupied_cells))
+    def display_enemy(self, mode=""):
+        if mode == "start":
+            unoccupied_cells = set(self.board) - set(self.snake) - set(self.apple_cell)
+            self.enemy_cell = random.choice(list(unoccupied_cells))
+        else:
+            self.old_enemy_cell = self.enemy_cell
+            self.canvas.delete(self.enemy_objects[-1])
+
         row_h = int(size_of_board / rows)
         col_w = int(size_of_board / cols)
         x1 = self.enemy_cell[0] * row_h
         y1 = self.enemy_cell[1] * col_w
         x2 = x1 + row_h
         y2 = y1 + col_w
-        self.enemy_objects = self.canvas.create_rectangle(
-            x1, y1, x2, y2, fill=Green_color, outline=RED_COLOR,
+        self.enemy_objects.append(
+            self.canvas.create_rectangle(
+                x1, y1, x2, y2, fill=Green_color, outline=RED_COLOR,
+            )
         )
 
     # ------------------------------------------------------------------
@@ -259,6 +269,39 @@ class SnakeAndApple:
         else:
             self.snake_heading = key
             self.display_snake()
+
+    def update_enemy(self):
+        score = len(self.snake)
+        if score >= 5:
+            self.enemy_level = 2
+        elif score >= 10:
+            self.enemy_level = 3
+
+        if self.enemy_level in (1, 2):
+            self.enemy_speed = 0.1
+        elif self.enemy_level in (3, 4):
+            self.enemy_speed = 0.4
+        elif self.enemy_level in 5:
+            self.enemy_speed = 0.6
+        else:
+            self.enemy_speed = 0
+
+        if not self.crashed:
+            snake_head = self.snake[-1]
+            enemy_head = self.enemy_cell
+            if snake_head[0] < enemy_head[0]:
+                self.enemy_cell = (enemy_head[0] - self.enemy_speed, enemy_head[1])
+            elif snake_head[0] > enemy_head[0]:
+                self.enemy_cell = (enemy_head[0] + self.enemy_speed, enemy_head[1])
+            elif snake_head[1] < enemy_head[1]:
+                self.enemy_cell = (enemy_head[0], enemy_head[1] - self.enemy_speed)
+            elif snake_head[1] > enemy_head[1]:
+                self.enemy_cell = (enemy_head[0], enemy_head[1] + self.enemy_speed)
+
+        if self.enemy_cell in self.snake[-1]:
+            self.crashed = True
+
+        self.display_enemy()
 
     def check_if_key_valid(self, key):
         valid_keys = ["Up", "Down", "Left", "Right"]
