@@ -169,7 +169,6 @@ class SnakeAndApple:
             self.canvas.delete(self.snake_objects.pop(0))
         if mode == "complete":
             for i, cell in enumerate(self.snake):
-                # print(cell)
                 row_h = int(size_of_board / rows)
                 col_w = int(size_of_board / cols)
                 x1 = cell[0] * row_h
@@ -223,6 +222,7 @@ class SnakeAndApple:
             self.enemy.insert(1, self.enemy_cell)
         else:
             self.canvas.delete(self.enemy_objects[-1])
+            self.enemy_objects.pop(0)
 
         color_switcher = {
             0: "#000000",  # Czarny
@@ -233,7 +233,6 @@ class SnakeAndApple:
             5: "#FF00FF",  # Fioletowy
         }
 
-        # for i, cell in enumerate(self.enemy):
         row_h = int(size_of_board / rows)
         col_w = int(size_of_board / cols)
         x1 = self.enemy[-1][0] * row_h + self.enemy_level * 5
