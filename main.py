@@ -7,7 +7,6 @@ from tkinter import *
 import random
 import time
 import numpy as np
-from PIL import ImageTk, Image
 
 # Define useful parameters
 size_of_board = 1000
@@ -195,6 +194,7 @@ class SnakeAndApple:
                         x1, y1, x2, y2, fill=BLUE_COLOR, outline=BLUE_COLOR,
                     )
                 )
+            print(self.snake)
         else:
             # only update head
             cell = self.snake[-1]
@@ -282,15 +282,25 @@ class SnakeAndApple:
             self.snake.append((head[0], head[1] + 1))
 
         head = self.snake[-1]
-        if (
-                head[0] > cols - 1
-                or head[0] < 0
-                or head[1] > rows - 1
-                or head[1] < 0
-                or len(set(self.snake)) != len(self.snake)
-        ):
-            # Hit the wall / Hit on body
+        if len(set(self.snake)) != len(self.snake):
+            # Hit on body
             self.crashed = True
+        elif head[0] > cols - 1:
+            self.snake.append((-1, head[1]))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[0] < 0:
+            self.snake.append((cols, head[1]))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[1] > rows - 1:
+            self.snake.append((head[0], -1))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[1] < 0:
+            self.snake.append((head[0], rows))
+            self.snake.pop(0)
+            self.display_snake()
         elif self.apple_cell == head:
             # Got the apple
             self.old_apple_cell = self.apple_cell
@@ -298,6 +308,7 @@ class SnakeAndApple:
             self.place_apple()
             self.display_snake()
         elif self.bonus_cell == head:
+            # Got the bonus
             self.explode_bonus()
             self.freeze_enemy(5)
             self.canvas.delete(self.bonus_obj)
