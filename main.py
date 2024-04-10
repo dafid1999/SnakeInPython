@@ -7,14 +7,14 @@ from tkinter import *
 import random
 import time
 import numpy as np
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
 
 # Define useful parameters
 size_of_board = 1000
 rows = 20
 cols = 20
 DELAY = 100
-snake_initial_length = 5
+snake_initial_length = 3
 symbol_size = (size_of_board / 3 - size_of_board / 8) / 2
 symbol_thickness = 2
 RED_COLOR = "#EE4035"
@@ -76,7 +76,10 @@ class SnakeAndApple:
     def initialize_enemy(self):
         self.enemy = []
         self.enemy_objects = []
+        self.enemy_size = [(0, 0), (1, 1)]
         self.enemy_cell = []
+        self.enemy_speed = 0
+        self.enemy_level = 0
 
     def play_again(self):
         self.canvas.delete("all")
@@ -85,15 +88,19 @@ class SnakeAndApple:
         self.place_apple()
         self.initialize_enemy()
         self.display_snake(mode="complete")
-        self.display_enemy()
+        self.display_enemy(mode="start")
         self.begin_time = time.time()
+
+    def update(self):
+        self.update_snake(self.last_key)
+        self.update_enemy()
 
     def mainloop(self):
         while True:
             self.window.update()
             if self.begin:
                 if not self.crashed:
-                    self.window.after(DELAY, self.update_snake(self.last_key))
+                    self.window.after(DELAY, self.update())
                 else:
                     self.begin = False
                     self.display_gameover()
@@ -162,7 +169,6 @@ class SnakeAndApple:
             self.canvas.delete(self.snake_objects.pop(0))
         if mode == "complete":
             for i, cell in enumerate(self.snake):
-                # print(cell)
                 row_h = int(size_of_board / rows)
                 col_w = int(size_of_board / cols)
                 x1 = cell[0] * row_h
@@ -204,21 +210,41 @@ class SnakeAndApple:
                         x1, y1, x2, y2, fill=BLUE_COLOR, outline=RED_COLOR
                     ),
                 )
-            if self.snake[-1] == self.enemy_cell:
+            if self.check_collision(self.snake[-1], self.enemy_size[0], self.enemy_size[1]):
                 self.crashed = TRUE
             self.window.update()
 
-    def display_enemy(self):
-        unoccupied_cells = set(self.board) - set(self.snake) - set(self.apple_cell)
-        self.enemy_cell = random.choice(list(unoccupied_cells))
+    def display_enemy(self, mode=""):
+        if mode == "start":
+            unoccupied_cells = set(self.board) - set(self.snake) - set(self.apple_cell)
+            self.enemy_cell = random.choice(list(unoccupied_cells))
+            self.enemy.insert(0, self.enemy_cell)
+            self.enemy.insert(1, self.enemy_cell)
+        else:
+            self.canvas.delete(self.enemy_objects[-1])
+            self.enemy_objects.pop(0)
+
+        color_switcher = {
+            0: "#000000",  # Czarny
+            1: "#FF0000",  # Czerwony
+            2: "#00FF00",  # Zielony
+            3: "#0000FF",  # Niebieski
+            4: "#FFFF00",  # Żółty
+            5: "#FF00FF",  # Fioletowy
+        }
+
         row_h = int(size_of_board / rows)
         col_w = int(size_of_board / cols)
-        x1 = self.enemy_cell[0] * row_h
-        y1 = self.enemy_cell[1] * col_w
-        x2 = x1 + row_h
-        y2 = y1 + col_w
-        self.enemy_objects = self.canvas.create_rectangle(
-            x1, y1, x2, y2, fill=Green_color, outline=RED_COLOR,
+        x1 = self.enemy[-1][0] * row_h + self.enemy_level * 5
+        y1 = self.enemy[-1][1] * col_w + self.enemy_level * 5
+        x2 = x1 + row_h + self.enemy_level * 5
+        y2 = y1 + col_w + self.enemy_level * 5
+        self.enemy_size[0] = x1, y1
+        self.enemy_size[1] = x2, y2
+        self.enemy_objects.append(
+            self.canvas.create_rectangle(
+                x1, y1, x2, y2, fill=color_switcher.get(self.enemy_level), outline=RED_COLOR,
+            )
         )
 
     # ------------------------------------------------------------------
@@ -260,6 +286,49 @@ class SnakeAndApple:
             self.snake_heading = key
             self.display_snake()
 
+    def update_enemy(self):
+        score = len(self.snake)
+        if score in (4, 6):
+            self.enemy_level = 1
+        elif score in (7, 8):
+            self.enemy_level = 2
+        elif score in (9, 11):
+            self.enemy_level = 3
+        elif score in (12, 14):
+            self.enemy_level = 4
+        elif score in (15, 17):
+            self.enemy_level = 5
+
+        if self.enemy_level in (1, 2):
+            self.enemy_speed = 0.2
+        elif self.enemy_level in (3, 4):
+            self.enemy_speed = 0.4
+        elif self.enemy_level == 5:
+            self.enemy_speed = 0.7
+        else:
+            self.enemy_speed = 0
+
+        if not self.crashed:
+            snake_head = self.snake[-1]
+            enemy_head = self.enemy[-1]
+
+            dx = snake_head[0] - enemy_head[0]
+            dy = snake_head[1] - enemy_head[1]
+
+            if abs(dx) > abs(dy):
+                if dx < 0:
+                    self.enemy.append((enemy_head[0] - self.enemy_speed, enemy_head[1]))
+                else:
+                    self.enemy.append((enemy_head[0] + self.enemy_speed, enemy_head[1]))
+            else:
+                if dy < 0:
+                    self.enemy.append((enemy_head[0], enemy_head[1] - self.enemy_speed))
+                else:
+                    self.enemy.append((enemy_head[0], enemy_head[1] + self.enemy_speed))
+            self.enemy.pop(0)
+
+        self.display_enemy()
+
     def check_if_key_valid(self, key):
         valid_keys = ["Up", "Down", "Left", "Right"]
         if key in valid_keys and self.forbidden_actions[self.snake_heading] != key:
@@ -278,6 +347,32 @@ class SnakeAndApple:
                 # print(key_pressed)
                 self.begin = True
                 self.last_key = key_pressed
+
+    def check_collision(self, snake, enemy_head, enemy_tail):
+        # Snake coordinates
+        snake_x = snake[0] * 50
+        snake_y = snake[1] * 50
+
+        # Enemy coordinates
+        enemy_x1 = enemy_head[0]
+        enemy_x2 = enemy_tail[0]
+        enemy_y1 = enemy_head[1]
+        enemy_y2 = enemy_tail[1]
+
+        # Snake collision area
+        snake_collision_area = (snake_x, snake_y, snake_x + 1, snake_y + 1)
+
+        # Enemy collision area
+        enemy_collision_area = (enemy_x1, enemy_y1, enemy_x2, enemy_y2)
+
+        # Check if the collision areas overlap
+        return self.overlap(snake_collision_area, enemy_collision_area)
+
+    def overlap(self, rect1, rect2):
+        x1, y1, x2, y2 = rect1
+        x3, y3, x4, y4 = rect2
+
+        return not (x2 < x3 or x1 > x4 or y2 < y3 or y1 > y4)
 
 
 game_instance = SnakeAndApple()
