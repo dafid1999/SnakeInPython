@@ -282,15 +282,25 @@ class SnakeAndApple:
             self.snake.append((head[0], head[1] + 1))
 
         head = self.snake[-1]
-        if (
-                head[0] > cols - 1
-                or head[0] < 0
-                or head[1] > rows - 1
-                or head[1] < 0
-                or len(set(self.snake)) != len(self.snake)
-        ):
-            # Hit the wall / Hit on body
+        if len(set(self.snake)) != len(self.snake):
+            # Hit on body
             self.crashed = True
+        elif head[0] > cols - 1:
+            self.snake.append((-1, head[1]))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[0] < 0:
+            self.snake.append((cols, head[1]))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[1] > rows - 1:
+            self.snake.append((head[0], -1))
+            self.snake.pop(0)
+            self.display_snake()
+        elif head[1] < 0:
+            self.snake.append((head[0], rows))
+            self.snake.pop(0)
+            self.display_snake()
         elif self.apple_cell == head:
             # Got the apple
             self.old_apple_cell = self.apple_cell
@@ -420,7 +430,7 @@ class SnakeAndApple:
         else:
             self.enemy_status = "freeze"
             self.enemy_level = 0
-            print(self.enemy_level)
+            # print(self.enemy_level)
             self.window.after(1000, self.freeze_enemy, time - 1)
 
 game_instance = SnakeAndApple()
