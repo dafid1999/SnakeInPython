@@ -80,12 +80,14 @@ class SnakeAndApple:
         self.enemy_cell = []
         self.enemy_speed = 0
         self.enemy_level = 0
+        self.enemy_status = ""
 
     def play_again(self):
         self.canvas.delete("all")
         self.initialize_board()
         self.initialize_snake()
         self.place_apple()
+        self.place_bonus()
         self.initialize_enemy()
         self.display_snake(mode="complete")
         self.display_enemy(mode="start")
@@ -161,6 +163,19 @@ class SnakeAndApple:
         y2 = y1 + col_w
         self.apple_obj = self.canvas.create_rectangle(
             x1, y1, x2, y2, fill=RED_COLOR_LIGHT, outline=BLUE_COLOR,
+        )
+
+    def place_bonus(self):
+        unoccupied_cels = set(self.board) - set(self.snake) - set(self.apple_cell)
+        self.bonus_cell = random.choice(list(unoccupied_cels))
+        row_h = int(size_of_board / rows)
+        col_w = int(size_of_board / cols)
+        x1 = self.bonus_cell[0] * row_h
+        y1 = self.bonus_cell[1] * col_w
+        x2 = x1 + row_h
+        y2 = y1 + col_w
+        self.bonus_obj = self.canvas.create_rectangle(
+            x1, y1, x2, y2, fill="#0000FF", outline=BLUE_COLOR,
         )
 
     def display_snake(self, mode=""):
@@ -282,22 +297,29 @@ class SnakeAndApple:
             self.canvas.delete(self.apple_obj)
             self.place_apple()
             self.display_snake()
+        elif self.bonus_cell == head:
+            self.explode_bonus()
+            self.freeze_enemy(5)
+            self.canvas.delete(self.bonus_obj)
+            self.place_bonus()
+            self.display_snake()
         else:
             self.snake_heading = key
             self.display_snake()
 
     def update_enemy(self):
         score = len(self.snake)
-        if score in (4, 6):
-            self.enemy_level = 1
-        elif score in (7, 8):
-            self.enemy_level = 2
-        elif score in (9, 11):
-            self.enemy_level = 3
-        elif score in (12, 14):
-            self.enemy_level = 4
-        elif score in (15, 17):
-            self.enemy_level = 5
+        if self.enemy_status == "":
+            if score in (4, 6):
+                self.enemy_level = 1
+            elif score in (7, 8):
+                self.enemy_level = 2
+            elif score in (9, 11):
+                self.enemy_level = 3
+            elif score in (12, 14):
+                self.enemy_level = 4
+            elif score in (15, 17):
+                self.enemy_level = 5
 
         if self.enemy_level in (1, 2):
             self.enemy_speed = 0.2
@@ -374,6 +396,32 @@ class SnakeAndApple:
 
         return not (x2 < x3 or x1 > x4 or y2 < y3 or y1 > y4)
 
+    def explode_bonus(self):
+        bonus_row, bonus_col = self.bonus_cell
+        apple_row, apple_col = self.apple_cell
+
+        for col in range(cols):
+            if apple_col == bonus_col:
+                self.old_apple_cell = self.bonus_cell
+                self.canvas.delete(self.apple_obj)
+                self.place_apple()
+
+        for row in range(rows):
+            if apple_row == bonus_row:
+                self.old_apple_cell = self.bonus_cell
+                self.canvas.delete(self.apple_obj)
+                self.place_apple()
+
+    def freeze_enemy(self, time):
+        #TODO improving the overlap of effects
+        if time <= 0:
+            self.enemy_status = ""
+            print(self.enemy_level)
+        else:
+            self.enemy_status = "freeze"
+            self.enemy_level = 0
+            print(self.enemy_level)
+            self.window.after(1000, self.freeze_enemy, time - 1)
 
 game_instance = SnakeAndApple()
 game_instance.mainloop()
