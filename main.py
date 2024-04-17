@@ -262,6 +262,33 @@ class SnakeAndApple:
             )
         )
 
+    def show_animation_of_bonus_collection(self, row, col):
+        row_h = int(size_of_board / rows)
+        col_w = int(size_of_board / cols)
+        # Changing the colour of the cell to blue
+        self.explode_animation_objects=[]
+        for i in range(rows):
+            x1 = i * row_h
+            y1 = col * col_w
+            x2 = x1 + row_h
+            y2 = y1 + col_w
+            self.explode_animation_objects.append(
+                self.canvas.create_rectangle(
+                    x1, y1, x2, y2, fill="#0000FF"
+            ))
+        for j in range(cols):
+            x1 = row * row_h
+            y1 = j * col_w
+            x2 = x1 + row_h
+            y2 = y1 + col_w
+            self.explode_animation_objects.append(
+                self.canvas.create_rectangle(
+                    x1, y1, x2, y2, fill="#0000FF"
+            ))
+        # Change of cell colour back to default after 500 milliseconds
+        self.window.after(500, lambda: list(map(self.canvas.delete, self.explode_animation_objects)))
+
+
     # ------------------------------------------------------------------
     # Logical Functions:
     # The modules required to carry out game logic
@@ -286,7 +313,7 @@ class SnakeAndApple:
             # Hit on body
             self.crashed = True
         elif head[0] > cols - 1:
-            self.snake.append((-1, head[1]))
+            self.snake.append((0, head[1]))
             self.snake.pop(0)
             self.display_snake()
         elif head[0] < 0:
@@ -294,7 +321,7 @@ class SnakeAndApple:
             self.snake.pop(0)
             self.display_snake()
         elif head[1] > rows - 1:
-            self.snake.append((head[0], -1))
+            self.snake.append((head[0], 0))
             self.snake.pop(0)
             self.display_snake()
         elif head[1] < 0:
@@ -308,8 +335,9 @@ class SnakeAndApple:
             self.place_apple()
             self.display_snake()
         elif self.bonus_cell == head:
+            #Got the bonus
             self.explode_bonus()
-            self.freeze_enemy(5)
+            self.freeze_enemy(3)
             self.canvas.delete(self.bonus_obj)
             self.place_bonus()
             self.display_snake()
@@ -409,7 +437,7 @@ class SnakeAndApple:
     def explode_bonus(self):
         bonus_row, bonus_col = self.bonus_cell
         apple_row, apple_col = self.apple_cell
-
+        self.show_animation_of_bonus_collection(bonus_row, bonus_col)
         for col in range(cols):
             if apple_col == bonus_col:
                 self.old_apple_cell = self.bonus_cell
@@ -426,11 +454,9 @@ class SnakeAndApple:
         #TODO improving the overlap of effects
         if time <= 0:
             self.enemy_status = ""
-            print(self.enemy_level)
         else:
             self.enemy_status = "freeze"
             self.enemy_level = 0
-            # print(self.enemy_level)
             self.window.after(1000, self.freeze_enemy, time - 1)
 
 game_instance = SnakeAndApple()
