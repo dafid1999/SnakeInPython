@@ -42,6 +42,8 @@ class SnakeAndApple:
 
     def initialize_board(self):
         self.board = []
+        self.apple_image = ImageTk.PhotoImage(Image.open("images/apple.png"))
+        self.bonus_image = ImageTk.PhotoImage(Image.open("images/bonus.png"))
         self.apple_obj = []
         self.old_apple_cell = []
 
@@ -61,6 +63,9 @@ class SnakeAndApple:
 
     def initialize_snake(self):
         self.snake = []
+        self.snake_head = []
+        self.snake_head_image = ImageTk.PhotoImage(Image.open("images/snake-head.png"))
+        self.snake_body_image = ImageTk.PhotoImage(Image.open("images/snake-body.png"))
         self.crashed = False
         self.snake_heading = "Right"
         self.last_key = self.snake_heading
@@ -75,6 +80,11 @@ class SnakeAndApple:
 
     def initialize_enemy(self):
         self.enemy = []
+        self.enemy_image_lvl_1 = ImageTk.PhotoImage(Image.open("images/enemy_lvl_1.png").resize((50, 50)))
+        self.enemy_image_lvl_2 = ImageTk.PhotoImage(Image.open("images/enemy_lvl_2.png").resize((60, 60)))
+        self.enemy_image_lvl_3 = ImageTk.PhotoImage(Image.open("images/enemy_lvl_3.png").resize((70, 70)))
+        self.enemy_image_lvl_4 = ImageTk.PhotoImage(Image.open("images/enemy_lvl_4.png").resize((80, 80)))
+        self.enemy_image_lvl_5 = ImageTk.PhotoImage(Image.open("images/enemy_lvl_5.png").resize((100, 100)))
         self.enemy_objects = []
         self.enemy_size = [(0, 0), (1, 1)]
         self.enemy_cell = []
@@ -159,11 +169,7 @@ class SnakeAndApple:
         col_w = int(size_of_board / cols)
         x1 = self.apple_cell[0] * row_h
         y1 = self.apple_cell[1] * col_w
-        x2 = x1 + row_h
-        y2 = y1 + col_w
-        self.apple_obj = self.canvas.create_rectangle(
-            x1, y1, x2, y2, fill=RED_COLOR_LIGHT, outline=BLUE_COLOR,
-        )
+        self.apple_obj = self.canvas.create_image(x1, y1, anchor=NW, image=self.apple_image)
 
     def place_bonus(self):
         unoccupied_cels = set(self.board) - set(self.snake) - set(self.apple_cell)
@@ -172,11 +178,7 @@ class SnakeAndApple:
         col_w = int(size_of_board / cols)
         x1 = self.bonus_cell[0] * row_h
         y1 = self.bonus_cell[1] * col_w
-        x2 = x1 + row_h
-        y2 = y1 + col_w
-        self.bonus_obj = self.canvas.create_rectangle(
-            x1, y1, x2, y2, fill="#0000FF", outline=BLUE_COLOR,
-        )
+        self.bonus_obj = self.canvas.create_image(x1, y1, anchor=NW, image=self.bonus_image)
 
     def display_snake(self, mode=""):
         # Remove tail from display if it exists
@@ -188,25 +190,33 @@ class SnakeAndApple:
                 col_w = int(size_of_board / cols)
                 x1 = cell[0] * row_h
                 y1 = cell[1] * col_w
-                x2 = x1 + row_h
-                y2 = y1 + col_w
-                self.snake_objects.append(
-                    self.canvas.create_rectangle(
-                        x1, y1, x2, y2, fill=BLUE_COLOR, outline=BLUE_COLOR,
+                if self.snake[i] == self.snake[-1]:
+                    self.snake_head = self.canvas.create_image(x1, y1, anchor=NW, image=self.snake_head_image)
+                else:
+                    self.snake_objects.append(
+                        self.canvas.create_image(
+                            x1, y1, anchor=NW, image=self.snake_body_image
+                        )
                     )
-                )
         else:
             # only update head
-            cell = self.snake[-1]
+            head = self.snake[-1]
+            cell = self.snake[-2]
             row_h = int(size_of_board / rows)
             col_w = int(size_of_board / cols)
             x1 = cell[0] * row_h
             y1 = cell[1] * col_w
             x2 = x1 + row_h
             y2 = y1 + col_w
+            if self.snake_head:
+                self.canvas.delete(self.snake_head)
+                # Create a new image for the head
+            self.snake_head = self.canvas.create_image(
+                head[0]* row_h, head[1]* col_w, anchor=NW, image=self.snake_head_image
+            )
             self.snake_objects.append(
-                self.canvas.create_rectangle(
-                    x1, y1, x2, y2, fill=BLUE_COLOR, outline=RED_COLOR,
+                self.canvas.create_image(
+                    x1, y1, anchor=NW, image=self.snake_body_image
                 )
             )
             if self.snake[0] == self.old_apple_cell:
@@ -221,8 +231,8 @@ class SnakeAndApple:
                 y2 = y1 + col_w
                 self.snake_objects.insert(
                     0,
-                    self.canvas.create_rectangle(
-                        x1, y1, x2, y2, fill=BLUE_COLOR, outline=RED_COLOR
+                    self.canvas.create_image(
+                        x1, y1, anchor=NW, image=self.snake_body_image
                     ),
                 )
             if self.check_collision(self.snake[-1], self.enemy_size[0], self.enemy_size[1]):
@@ -239,13 +249,13 @@ class SnakeAndApple:
             self.canvas.delete(self.enemy_objects[-1])
             self.enemy_objects.pop(0)
 
-        color_switcher = {
-            0: "#000000",  # Czarny
-            1: "#FF0000",  # Czerwony
-            2: "#00FF00",  # Zielony
-            3: "#0000FF",  # Niebieski
-            4: "#FFFF00",  # Żółty
-            5: "#FF00FF",  # Fioletowy
+        enemy_skin_switcher = {
+            0: self.enemy_image_lvl_1,
+            1: self.enemy_image_lvl_1,
+            2: self.enemy_image_lvl_2,
+            3: self.enemy_image_lvl_3,
+            4: self.enemy_image_lvl_4,
+            5: self.enemy_image_lvl_5,
         }
 
         row_h = int(size_of_board / rows)
@@ -256,12 +266,7 @@ class SnakeAndApple:
         y2 = y1 + col_w + self.enemy_level * 5
         self.enemy_size[0] = x1, y1
         self.enemy_size[1] = x2, y2
-        self.enemy_objects.append(
-            self.canvas.create_rectangle(
-                x1, y1, x2, y2, fill=color_switcher.get(self.enemy_level), outline=RED_COLOR,
-            )
-        )
-
+        self.enemy_objects.append(self.canvas.create_image(x1, y1, anchor=NW, image=enemy_skin_switcher[self.enemy_level]))
     def show_animation_of_bonus_collection(self, row, col):
         row_h = int(size_of_board / rows)
         col_w = int(size_of_board / cols)
@@ -299,14 +304,23 @@ class SnakeAndApple:
         head = self.snake[-1]
         if tail != self.old_apple_cell:
             self.snake.pop(0)
+        image_pil = Image.open("images/snake-head.png")
         if key == "Left":
             self.snake.append((head[0] - 1, head[1]))
+            image_pil = image_pil.rotate(-180)
+            self.snake_head_image = ImageTk.PhotoImage(image_pil)
         elif key == "Right":
             self.snake.append((head[0] + 1, head[1]))
+            image_pil = image_pil.rotate(0)
+            self.snake_head_image = ImageTk.PhotoImage(image_pil)
         elif key == "Up":
             self.snake.append((head[0], head[1] - 1))
+            image_pil = image_pil.rotate(90)
+            self.snake_head_image = ImageTk.PhotoImage(image_pil)
         elif key == "Down":
             self.snake.append((head[0], head[1] + 1))
+            image_pil = image_pil.rotate(-90)
+            self.snake_head_image = ImageTk.PhotoImage(image_pil)
 
         head = self.snake[-1]
         if len(set(self.snake)) != len(self.snake):
@@ -350,13 +364,13 @@ class SnakeAndApple:
         if self.enemy_status == "":
             if score in (4, 6):
                 self.enemy_level = 1
-            elif score in (7, 8):
+            elif score in (7, 9):
                 self.enemy_level = 2
-            elif score in (9, 11):
+            elif score in (10, 12):
                 self.enemy_level = 3
-            elif score in (12, 14):
+            elif score in (13, 20):
                 self.enemy_level = 4
-            elif score in (15, 17):
+            elif score in (13, 20):
                 self.enemy_level = 5
 
         if self.enemy_level in (1, 2):
@@ -414,13 +428,13 @@ class SnakeAndApple:
         snake_y = snake[1] * 50
 
         # Enemy coordinates
-        enemy_x1 = enemy_head[0]
-        enemy_x2 = enemy_tail[0]
-        enemy_y1 = enemy_head[1]
-        enemy_y2 = enemy_tail[1]
+        enemy_x1 = enemy_head[0]+1
+        enemy_x2 = enemy_tail[0]-1
+        enemy_y1 = enemy_head[1]+1
+        enemy_y2 = enemy_tail[1]-1
 
         # Snake collision area
-        snake_collision_area = (snake_x, snake_y, snake_x + 1, snake_y + 1)
+        snake_collision_area = (snake_x, snake_y, snake_x + 50, snake_y + 50)
 
         # Enemy collision area
         enemy_collision_area = (enemy_x1, enemy_y1, enemy_x2, enemy_y2)
